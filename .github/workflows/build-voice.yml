@@ -1,0 +1,31 @@
+name: Build voice note
+
+on:
+  push:
+    paths:
+      - 'voice-note.b64'
+      - '.github/workflows/build-voice.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-voice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decode voice note
+        run: |
+          base64 -d voice-note.b64 > voice-note.mp3
+          file voice-note.mp3
+
+      - name: Commit MP3
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add voice-note.mp3
+          git diff --cached --quiet && exit 0
+          git commit -m "Build playable voice note"
+          git push
