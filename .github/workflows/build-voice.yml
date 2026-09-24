@@ -21,11 +21,26 @@ jobs:
           base64 -d voice-note.b64 > voice-note.mp3
           file voice-note.mp3
 
-      - name: Commit MP3
+      - name: Make apology page use MP3 directly
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path('heartfelt.html')
+          html = path.read_text()
+          replacement = '''const voice=document.getElementById('voice'),voiceBtn=document.getElementById('voiceBtn');voice.src='voice-note.mp3?v='+Date.now();voice.load();voiceBtn.disabled=false;voiceBtn.onclick=async()=>{if(voice.paused){try{await voice.play();voiceBtn.textContent='⏸ Playing my voice…';voiceBtn.classList.add('playing')}catch(e){voiceBtn.textContent='Tap again to play ❤️'}}else{voice.pause();voiceBtn.textContent='▶ Tap to hear me say sorry';voiceBtn.classList.remove('playing')}};voice.onended=()=>{voiceBtn.textContent='▶ Hear it again ❤️';voiceBtn.classList.remove('playing')};function hearts()'''
+          pattern = r"const voice=document\.getElementById\('voice'\).*?;function hearts\(\)"
+          updated, count = re.subn(pattern, replacement, html, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not find voice-note code in heartfelt.html')
+          path.write_text(updated)
+          PY
+
+      - name: Commit playable voice note and page fix
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add voice-note.mp3
+          git add voice-note.mp3 heartfelt.html
           git diff --cached --quiet && exit 0
-          git commit -m "Build playable voice note"
+          git commit -m "Fix playable apology voice note"
           git push
