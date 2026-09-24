@@ -18,7 +18,14 @@ jobs:
 
       - name: Decode voice note
         run: |
-          base64 -d voice-note.b64 > voice-note.mp3
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          s = Path('voice-note.b64').read_text().strip()
+          s = ''.join(s.split())
+          s += '=' * ((4 - len(s) % 4) % 4)
+          Path('voice-note.mp3').write_bytes(base64.b64decode(s, validate=False))
+          PY
           file voice-note.mp3
 
       - name: Make apology page use MP3 directly
